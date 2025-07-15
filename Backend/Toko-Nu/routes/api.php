@@ -8,24 +8,33 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Seller\ProductController;
 use App\Http\Controllers\Api\Seller\ProfileController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\Api\Buyer\ProductController as BuyerProductController;
+use App\Http\Controllers\Api\EventController;
+
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/user', [AuthController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+Route::get('/user', [AuthController::class, 'index']);
 
 
 
 Route::middleware(['auth:sanctum', 'role:seller'])->prefix('seller')->group(function () {
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::get('/products', [SellerProductController::class, 'index']);
+    Route::post('/products', [SellerProductController::class, 'store']);
+    Route::put('/products/{id}', [SellerProductController::class, 'update']);
+    Route::delete('/products/{id}', [SellerProductController::class, 'destroy']);
+    Route::get('/products/{id}', [SellerProductController::class, 'show']);
 });
+
+Route::middleware(['auth:sanctum', 'role:buyer'])->prefix('buyer')->group(function () {
+    Route::get('/products', [BuyerProductController::class, 'index']);
+    Route::get('/products/{id}', [BuyerProductController::class, 'show']);
+});
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [ProfileController::class, 'me']); // yang tadi
@@ -33,4 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
+
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{id}', [EventController::class, 'show']);
+
 
