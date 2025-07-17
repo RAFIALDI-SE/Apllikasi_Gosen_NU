@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Seller\ProfileController;
+use App\Http\Controllers\Api\Seller\ProfileController as SellerProfileController;
+use App\Http\Controllers\Api\Buyer\ProfileController as BuyerProfileController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\Api\Buyer\ProductController as BuyerProductController;
@@ -36,9 +37,14 @@ Route::middleware(['auth:sanctum', 'role:buyer'])->prefix('buyer')->group(functi
 });
 
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', [ProfileController::class, 'me']); // yang tadi
-    Route::post('/me/update', [ProfileController::class, 'update']); // 🔧 Update profil
+Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
+    Route::get('/me', [SellerProfileController::class, 'me']); // yang tadi
+    Route::post('/me/update', [SellerProfileController::class, 'update']); // 🔧 Update profil
+});
+
+Route::middleware('auth:sanctum')->prefix('buyer')->group(function () {
+    Route::get('/me', [BuyerProfileController::class, 'me']);
+    Route::post('/me/update', [BuyerProfileController::class, 'update']);
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
