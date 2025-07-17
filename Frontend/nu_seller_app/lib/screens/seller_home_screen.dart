@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/profile_controller.dart';
 
 class SellerHomeScreen extends StatefulWidget {
   const SellerHomeScreen({super.key});
@@ -14,12 +15,19 @@ class SellerHomeScreen extends StatefulWidget {
 class _SellerHomeScreenState extends State<SellerHomeScreen> {
   final Color greenNU = const Color(0xFF1A8754);
   List<dynamic> _products = [];
+  final ProfileController _profileController = ProfileController();
   bool _isLoading = true;
+  bool _loadingProfile = true;
+
+  Map<String, dynamic>? _userData;
 
   @override
   void initState() {
     super.initState();
-    fetchProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchProducts();
+      fetchProfile();
+    });
   }
 
   Future<void> fetchProducts() async {
@@ -43,6 +51,21 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     }
   }
 
+  Future<void> fetchProfile() async {
+    try {
+      final data = await _profileController.fetchCurrentUser();
+      print("✅ DATA PROFILE DIDAPAT: $data"); // Debug
+
+      setState(() {
+        _userData = data;
+        _loadingProfile = false;
+      });
+    } catch (e) {
+      print("❌ Gagal ambil profil: $e");
+      setState(() => _loadingProfile = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,14 +80,35 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: greenNU),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.storefront, color: Colors.white, size: 40),
-                  SizedBox(height: 10),
-                  Text('Menu Seller', style: TextStyle(color: Colors.white, fontSize: 22)),
-                ],
-              ),
+              child: _loadingProfile
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.white))
+                  : Row(
+                      children: [
+                        if (_userData?['profile_picture'] != null &&
+                            _userData!['profile_picture'].toString().isNotEmpty)
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundImage:
+                                NetworkImage(_userData!['profile_picture']),
+                          )
+                        else
+                          const CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person,
+                                size: 30, color: Colors.grey),
+                          ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Halo, ${_userData?['name'] ?? 'Penjual'}!',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
             ListTile(
               leading: const Icon(Icons.person),
@@ -113,74 +157,82 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _products.isEmpty
-          ? const Center(child: Text('Belum ada produk.'))
-          : RefreshIndicator(
-        onRefresh: fetchProducts,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _products.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.7,
-          ),
-          itemBuilder: (context, index) {
-            final product = _products[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/product-detail',
-                  arguments: product['id'],
-                );
-              },
-              child: Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                        child: product['image'] != null
-                            ? Image.network(
-                          'http://10.0.2.2:8000/storage/${product['image']}',
-                          fit: BoxFit.cover,
-                        )
-                            : Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(Icons.image_not_supported, size: 40),
+              ? const Center(child: Text('Belum ada produk.'))
+              : RefreshIndicator(
+                  onRefresh: fetchProducts,
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _products.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = _products[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/product-detail',
+                            arguments: product['id'],
+                          );
+                        },
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12)),
+                                  child: product['image'] != null
+                                      ? Image.network(
+                                          'http://10.0.2.2:8000/storage/${product['image']}',
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: Icon(
+                                                Icons.image_not_supported,
+                                                size: 40),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product['name'],
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text('Rp ${product['price']}',
+                                        style: const TextStyle(fontSize: 14)),
+                                    Text('Stok: ${product['stock']}',
+                                        style: const TextStyle(fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product['name'],
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('Rp ${product['price']}', style: const TextStyle(fontSize: 14)),
-                          Text('Stok: ${product['stock']}', style: const TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.pushNamed(context, '/add-product');
