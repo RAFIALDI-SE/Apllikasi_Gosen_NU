@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\Api\Buyer\ProductController as BuyerProductController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\Buyer\FavoriteController;
+
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -45,6 +47,9 @@ Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
 Route::middleware('auth:sanctum')->prefix('buyer')->group(function () {
     Route::get('/me', [BuyerProfileController::class, 'me']);
     Route::post('/me/update', [BuyerProfileController::class, 'update']);
+    Route::get('/favorites', [FavoriteController::class, 'index']);
+    Route::post('/favorites/{productId}', [FavoriteController::class, 'store']);
+    Route::delete('/favorites/{productId}', [FavoriteController::class, 'destroy']);
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
