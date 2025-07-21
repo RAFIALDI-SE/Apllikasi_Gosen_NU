@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+
 class SellerEditProfileScreen extends StatefulWidget {
   const SellerEditProfileScreen({super.key});
 
@@ -28,6 +31,8 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
   File? _profileImage, _ktpImage, _bannerImage;
 
   bool _isLoading = true;
+
+  bool _isGettingLocation = false;
 
   @override
   void initState() {
@@ -121,6 +126,56 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
     if (picked != null) onSelected(File(picked.path));
   }
 
+  Future<void> _ambilAlamatOtomatis() async {
+    setState(() => _isGettingLocation = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception("Layanan lokasi belum aktif");
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception("Izin lokasi ditolak");
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception("Izin lokasi ditolak permanen");
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      final placemark = placemarks.first;
+
+      setState(() {
+        _latitudeController.text = position.latitude.toString();
+        _longitudeController.text = position.longitude.toString();
+        _addressController.text =
+            '${placemark.street}, ${placemark.subLocality}, ${placemark.locality}, ${placemark.administrativeArea}';
+      });
+    } catch (e) {
+      debugPrint("❌ Error ambil lokasi: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal ambil lokasi: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isGettingLocation = false);
+    }
+  }
+
   Widget _buildTextField(String label, TextEditingController controller,
       {TextInputType keyboardType = TextInputType.text}) {
     return Padding(
@@ -140,30 +195,77 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
     );
   }
 
+  Widget _buildTextFieldWithIcon(
+      String label, IconData icon, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon),
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        validator: (val) =>
+            val == null || val.isEmpty ? '$label wajib diisi' : null,
+      ),
+    );
+  }
+
   Widget _buildImageInput(String label, File? image, Function(File) onPick) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(label,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            if (image != null)
-              Image.file(image, width: 80, height: 80, fit: BoxFit.cover)
-            else
-              Container(
-                width: 80,
-                height: 80,
-                color: Colors.grey[300],
-                child: const Icon(Icons.image, size: 40),
-              ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: greenNU),
-              onPressed: () => _pickImage(ImageSource.gallery, onPick),
-              child: const Text("Pilih Gambar"),
+        InkWell(
+          onTap: () => _pickImage(ImageSource.gallery, onPick),
+          child: Container(
+            width: double.infinity,
+            height: 160,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey[200],
+              image: image != null
+                  ? DecorationImage(
+                      image: FileImage(image),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-          ],
+            child: image == null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.image, size: 48, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text("Klik untuk memilih gambar",
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  )
+                : Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.edit,
+                            size: 20, color: Colors.white),
+                      ),
+                    ),
+                  ),
+          ),
         ),
         const SizedBox(height: 16),
       ],
@@ -173,44 +275,153 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F9F9),
       appBar: AppBar(
-        title: const Text('Edit Profil'),
+        title: const Text('Edit Profil',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: greenNU,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildImageInput("Foto Profil", _profileImage,
-                        (f) => setState(() => _profileImage = f)),
-                    _buildImageInput("Foto KTP", _ktpImage,
-                        (f) => setState(() => _ktpImage = f)),
-                    _buildImageInput("Banner Toko", _bannerImage,
-                        (f) => setState(() => _bannerImage = f)),
-                    _buildTextField("Nama Lengkap", _nameController),
-                    _buildTextField("No. Telepon", _phoneController),
-                    _buildTextField("Alamat", _addressController),
-                    _buildTextField("Latitude", _latitudeController,
-                        keyboardType: TextInputType.number),
-                    _buildTextField("Longitude", _longitudeController,
-                        keyboardType: TextInputType.number),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: greenNU,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: _updateProfile,
-                      icon: const Icon(Icons.save),
-                      label: const Text("Simpan Perubahan"),
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(60),
+                                    child: _profileImage != null
+                                        ? Image.file(
+                                            _profileImage!,
+                                            width: 120,
+                                            height: 120,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: 120,
+                                            height: 120,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[300],
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.person,
+                                                size: 60, color: Colors.white),
+                                          ),
+                                  ),
+                                  Positioned(
+                                    child: InkWell(
+                                      onTap: () => _pickImage(
+                                          ImageSource.gallery,
+                                          (f) => setState(
+                                              () => _profileImage = f)),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: greenNU,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.edit,
+                                            size: 18, color: Colors.white),
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                "Foto Profil",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildImageInput("Foto KTP", _ktpImage,
+                            (f) => setState(() => _ktpImage = f)),
+                        _buildImageInput("Banner Toko", _bannerImage,
+                            (f) => setState(() => _bannerImage = f)),
+                        _buildTextFieldWithIcon(
+                            "Nama Lengkap", Icons.person, _nameController),
+                        _buildTextFieldWithIcon(
+                            "No. Telepon", Icons.phone, _phoneController,
+                            keyboardType: TextInputType.phone),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: _isGettingLocation
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.my_location),
+                            label: Text(
+                              _isGettingLocation
+                                  ? "Mengambil lokasi..."
+                                  : "Gunakan Lokasi Saat Ini",
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: _isGettingLocation
+                                ? null
+                                : _ambilAlamatOtomatis,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: greenNU,
+                              side: BorderSide(color: greenNU),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Alamat, latitude dan longitude akan terisi otomatis.",
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        _buildTextFieldWithIcon(
+                            "Alamat", Icons.home, _addressController),
+                        _buildTextFieldWithIcon(
+                            "Latitude", Icons.location_on, _latitudeController,
+                            keyboardType: TextInputType.number),
+                        _buildTextFieldWithIcon("Longitude",
+                            Icons.location_on_outlined, _longitudeController,
+                            keyboardType: TextInputType.number),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: greenNU,
+                            minimumSize: const Size.fromHeight(48),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _updateProfile,
+                          icon: const Icon(Icons.save),
+                          label: const Text("Simpan Perubahan"),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

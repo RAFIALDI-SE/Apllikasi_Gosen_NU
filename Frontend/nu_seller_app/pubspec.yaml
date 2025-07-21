@@ -37,6 +37,8 @@ dependencies:
   http: ^1.4.0
   image_picker: ^1.1.2
   shared_preferences: ^2.5.3
+  geocoding: ^4.0.0
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +50,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+
+dependency_overrides:
+  geolocator_android: 4.6.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
