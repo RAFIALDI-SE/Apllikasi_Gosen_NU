@@ -11,20 +11,24 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  final addressController = TextEditingController();
-  final AuthController authController = AuthController();
 
+  final AuthController authController = AuthController();
   final _formKey = GlobalKey<FormState>();
+
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   final Color greenNU = const Color(0xFF1A8754); // Warna khas NU
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF2FDF6),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -56,51 +60,116 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: nameController,
                       decoration: InputDecoration(
                         labelText: 'Nama Lengkap',
-                        prefixIcon: const Icon(Icons.person),
+                        prefixIcon: Icon(Icons.person, color: greenNU),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                          value!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Nama wajib diisi'
+                          : null,
                     ),
                     const SizedBox(height: 16),
+
                     // Email
                     TextFormField(
                       controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email),
+                        labelText: 'Email (@gmail.com)',
+                        prefixIcon: Icon(Icons.email, color: greenNU),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                          value!.isEmpty ? 'Email tidak boleh kosong' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Email wajib diisi';
+                        } else if (!value.contains('@') ||
+                            !value.endsWith('@gmail.com')) {
+                          return 'Gunakan email @gmail.com yang valid';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
+
+                    // Nomor HP
+                    TextFormField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: 'Nomor HP (+62...)',
+                        prefixIcon: Icon(Icons.phone, color: greenNU),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Nomor HP wajib diisi';
+                        } else if (!value.startsWith('+62')) {
+                          return 'Gunakan format +62';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
                     // Password
                     TextFormField(
                       controller: passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock),
+                        hintText: 'Minimal 8 karakter kombinasi huruf & simbol',
+                        prefixIcon: Icon(Icons.lock, color: greenNU),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: greenNU,
+                          ),
+                          onPressed: () {
+                            setState(
+                                () => _obscurePassword = !_obscurePassword);
+                          },
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                          value!.length < 6 ? 'Minimal 6 karakter' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password wajib diisi';
+                        } else if (value.length < 8) {
+                          return 'Password minimal 8 karakter';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
+
                     // Konfirmasi Password
                     TextFormField(
                       controller: confirmPasswordController,
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                       decoration: InputDecoration(
                         labelText: 'Konfirmasi Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: Icon(Icons.lock_outline, color: greenNU),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: greenNU,
+                          ),
+                          onPressed: () {
+                            setState(() => _obscureConfirmPassword =
+                                !_obscureConfirmPassword);
+                          },
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -109,19 +178,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? 'Password tidak cocok'
                           : null,
                     ),
-                    const SizedBox(height: 16),
-                    // Alamat
-                    TextFormField(
-                      controller: addressController,
-                      decoration: InputDecoration(
-                        labelText: 'Alamat',
-                        prefixIcon: const Icon(Icons.home),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 30),
+
+                    // Alamat
+
                     // Tombol Register
                     SizedBox(
                       width: double.infinity,
@@ -135,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     nameController.text,
                                     emailController.text,
                                     passwordController.text,
-                                    addressController.text,
+                                    phoneController.text,
                                     context,
                                   );
                                   setState(() => _isLoading = false);
@@ -154,6 +214,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Navigasi ke Login
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, '/login'),
                       child: Text(
@@ -163,7 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),

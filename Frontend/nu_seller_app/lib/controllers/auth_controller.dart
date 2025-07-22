@@ -6,8 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthController {
   final String baseUrl = 'http://10.0.2.2:8000/api';
 
-  Future<void> registerSeller(String name, String email, String password,
-      String address, BuildContext context) async {
+  Future<void> registerSeller(
+    String name,
+    String email,
+    String password,
+    String phone,
+    BuildContext context,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {'Accept': 'application/json'},
@@ -15,9 +20,10 @@ class AuthController {
         'name': name,
         'email': email,
         'password': password,
-        'password_confirmation': password, // penting!
+        'password_confirmation': password,
         'role': 'seller',
-        'address': address,
+        'phone': phone,
+        'address': 'kosong',
         'latitude': '-7.79', // Dummy dulu
         'longitude': '110.41',
       },
@@ -27,12 +33,40 @@ class AuthController {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Register berhasil, login sekarang')));
+        const SnackBar(content: Text('Register berhasil, silakan login')),
+      );
       Navigator.pushNamed(context, '/login');
+    } else if (response.statusCode == 422) {
+      // Laravel validation error
+      final errors = data['errors'];
+      if (errors != null) {
+        String errorMessage = '';
+        if (errors['name'] != null) {
+          errorMessage += 'Nama: ${errors['name'][0]}\n';
+        }
+        if (errors['email'] != null) {
+          errorMessage += 'Email: ${errors['email'][0]}\n';
+        }
+        if (errors['phone'] != null) {
+          errorMessage += 'Nomor HP: ${errors['phone'][0]}\n';
+        }
+        if (errors['password'] != null) {
+          errorMessage += 'Password: ${errors['password'][0]}\n';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage.trim())),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terjadi kesalahan validasi')),
+        );
+      }
     } else {
       final error = data['message'] ?? 'Register gagal';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     }
   }
 
