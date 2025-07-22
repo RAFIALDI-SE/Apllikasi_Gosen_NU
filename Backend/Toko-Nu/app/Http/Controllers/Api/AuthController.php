@@ -91,6 +91,33 @@ class AuthController extends Controller
         ]);
     }
 
+    public function loginseller(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Email atau password salah'], 401);
+    }
+
+    // Cek role seller
+    if ($user->role !== 'seller') {
+        return response()->json(['message' => 'Akun ini bukan seller'], 403);
+    }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Login seller berhasil',
+        'user' => $user,
+        'token' => $token,
+    ]);
+}
+
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
