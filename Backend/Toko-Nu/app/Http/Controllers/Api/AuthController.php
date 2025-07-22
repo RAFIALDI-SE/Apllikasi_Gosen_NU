@@ -14,10 +14,33 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|min:6|confirmed',
+
+            // Email harus domain @gmail.com dan unik
+            'email' => [
+                'required',
+                'email',
+                'regex:/^[a-zA-Z0-9._%+-]+@gmail\.com$/',
+                'unique:users',
+            ],
+
+            // Password harus minimal 8 karakter, mengandung huruf besar, kecil, angka, dan simbol
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/',
+            ],
+
+            // Role sesuai pilihan
             'role' => 'required|in:buyer,seller,driver',
-            'phone' => 'nullable|string',
+
+            // Nomor HP harus diawali dengan +62 dan hanya angka setelahnya
+            'phone' => [
+                'nullable',
+                'regex:/^\+62[0-9]{9,13}$/',
+            ],
+
             'address' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -32,10 +55,9 @@ class AuthController extends Controller
             'address' => $request->address,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
-            'profile_picture' => null, // ✅ Set null untuk pertama kali
+            'profile_picture' => null,
             'ktp_photo' => null,
             'store_banner' => null,
-
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
