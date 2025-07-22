@@ -73,7 +73,7 @@ class AuthController {
   Future<bool> loginSeller(
       String email, String password, BuildContext context) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/login'),
+      Uri.parse('$baseUrl/login/seller'), // GANTI INI
       headers: {'Accept': 'application/json'},
       body: {
         'email': email,
@@ -89,12 +89,12 @@ class AuthController {
 
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Login berhasil!')));
-      return true; // ✅ sukses
+      return true;
     } else {
       final error = data['message'] ?? 'Login gagal';
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error)));
-      return false; // ❌ gagal
+      return false;
     }
   }
 
