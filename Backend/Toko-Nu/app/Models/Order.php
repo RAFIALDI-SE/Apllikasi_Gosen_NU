@@ -34,4 +34,9 @@ class Order extends Model
     public function paymentConfirmer() {
         return $this->belongsTo(User::class, 'paid_by');
     }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

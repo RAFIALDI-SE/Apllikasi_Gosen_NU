@@ -92,57 +92,83 @@ class AuthController extends Controller
     }
 
     public function loginseller(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        return response()->json(['message' => 'Email atau password salah'], 401);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Email atau password salah'], 401);
+        }
+
+        // Cek role seller
+        if ($user->role !== 'seller') {
+            return response()->json(['message' => 'Akun ini bukan seller'], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login seller berhasil',
+            'user' => $user,
+            'token' => $token,
+        ]);
     }
 
-    // Cek role seller
-    if ($user->role !== 'seller') {
-        return response()->json(['message' => 'Akun ini bukan seller'], 403);
+    public function loginbuyer(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Email atau password salah'], 401);
+        }
+
+        if ($user->role !== 'buyer') {
+            return response()->json(['message' => 'Anda bukan buyer'], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login berhasil',
+            'user' => $user,
+            'token' => $token,
+        ]);
     }
 
-    $token = $user->createToken('auth_token')->plainTextToken;
+    public function loginDriver(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
 
-    return response()->json([
-        'message' => 'Login seller berhasil',
-        'user' => $user,
-        'token' => $token,
-    ]);
-}
+        $user = User::where('email', $request->email)->first();
 
-public function loginbuyer(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Email atau password salah'], 401);
+        }
 
-    $user = User::where('email', $request->email)->first();
+        if ($user->role !== 'driver') {
+            return response()->json(['message' => 'Anda bukan driver'], 403);
+        }
 
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        return response()->json(['message' => 'Email atau password salah'], 401);
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login berhasil sebagai driver',
+            'user' => $user,
+            'token' => $token,
+        ]);
     }
-
-    if ($user->role !== 'buyer') {
-        return response()->json(['message' => 'Anda bukan buyer'], 403);
-    }
-
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    return response()->json([
-        'message' => 'Login berhasil',
-        'user' => $user,
-        'token' => $token,
-    ]);
-}
 
     public function logout(Request $request)
     {

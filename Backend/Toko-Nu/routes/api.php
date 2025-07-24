@@ -23,6 +23,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/login/seller', [AuthController::class, 'loginseller']);
 Route::post('/login/buyer', [AuthController::class, 'loginbuyer']);
+Route::post('/login/driver', [AuthController::class, 'loginDriver']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::get('/user', [AuthController::class, 'index']);
 
