@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Seller\ProductController as SellerProductController
 use App\Http\Controllers\Api\Buyer\ProductController as BuyerProductController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\Buyer\FavoriteController;
+use App\Http\Controllers\Api\Buyer\BuyerOrderController;
 
 
 
@@ -38,6 +39,10 @@ Route::middleware(['auth:sanctum', 'role:seller'])->prefix('seller')->group(func
 Route::middleware(['auth:sanctum', 'role:buyer'])->prefix('buyer')->group(function () {
     Route::get('/products', [BuyerProductController::class, 'index']);
     Route::get('/products/{id}', [BuyerProductController::class, 'show']);
+    Route::get('/drivers', [BuyerOrderController::class, 'availableDrivers']);
+    Route::get('/products/{id}', [BuyerOrderController::class, 'productDetail']);
+    Route::post('/orders', [BuyerOrderController::class, 'store']);
+    Route::get('/orders', [BuyerOrderController::class, 'index']);
 });
 
 
