@@ -13,15 +13,30 @@ class BuyerOrderController extends Controller
     //
     public function productDetail($id)
     {
-        $product = Product::with('user:id,name')->findOrFail($id);
+        $product = Product::with([
+            'user:id,name,phone,address,latitude,longitude',
+            'category:id,name'
+        ])->findOrFail($id);
+
         return response()->json($product);
     }
 
     public function availableDrivers()
     {
-        $drivers = User::where('role', 'driver')->get(['id', 'name', 'profile_picture']);
+        $drivers = User::where('role', 'driver')
+            ->orderBy('is_active', 'desc')
+            ->get(['id', 'name', 'profile_picture','address', 'phone', 'is_active'])
+            ->map(function ($driver) {
+                // Ubah path ke full URL jika ada gambarnya
+                $driver->profile_picture = $driver->profile_picture
+                    ? asset('storage/' . $driver->profile_picture)
+                    : null;
+                return $driver;
+            });
+
         return response()->json($drivers);
     }
+
 
     public function store(Request $request)
     {

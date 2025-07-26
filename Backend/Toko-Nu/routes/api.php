@@ -10,14 +10,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Seller\ProfileController as SellerProfileController;
 use App\Http\Controllers\Api\Buyer\ProfileController as BuyerProfileController;
+use App\Http\Controllers\Api\Driver\ProfileController as DriverProfileController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\Api\Buyer\ProductController as BuyerProductController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\Buyer\FavoriteController;
 use App\Http\Controllers\Api\Buyer\BuyerOrderController;
-
-
+use App\Http\Controllers\Api\Driver\DriverController;
+use App\Models\Favorite;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -44,12 +45,19 @@ Route::middleware(['auth:sanctum', 'role:buyer'])->prefix('buyer')->group(functi
     Route::get('/products/{id}', [BuyerOrderController::class, 'productDetail']);
     Route::post('/orders', [BuyerOrderController::class, 'store']);
     Route::get('/orders', [BuyerOrderController::class, 'index']);
+    // Route::get('/products/search', [BuyerProductController::class, 'search']);
 });
 
 
 Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
     Route::get('/me', [SellerProfileController::class, 'me']); // yang tadi
     Route::post('/me/update', [SellerProfileController::class, 'update']); // 🔧 Update profil
+});
+
+
+Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
+    Route::get('/me', [DriverProfileController::class, 'me']); // yang tadi
+    Route::post('/me/update', [DriverProfileController::class, 'update']); // 🔧 Update profil
 });
 
 Route::middleware('auth:sanctum')->prefix('buyer')->group(function () {
@@ -59,6 +67,15 @@ Route::middleware('auth:sanctum')->prefix('buyer')->group(function () {
     Route::post('/favorites/{productId}', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{productId}', [FavoriteController::class, 'destroy']);
 });
+
+
+// routes/api.php
+Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
+    Route::post('/toggle-active', [DriverController::class, 'toggleActive']);
+    Route::get('/status', [DriverController::class, 'status']);
+});
+
+
 
 Route::get('/categories', [CategoryController::class, 'index']);
 
