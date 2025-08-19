@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->prefix('seller')->group(func
     Route::put('/products/{id}', [SellerProductController::class, 'update']);
     Route::delete('/products/{id}', [SellerProductController::class, 'destroy']);
     Route::get('/products/{id}', [SellerProductController::class, 'show']);
+    Route::put('/products/toggle/{id}', [SellerProductController::class, 'toggleVisibility']);
 });
 
 Route::middleware(['auth:sanctum', 'role:buyer'])->prefix('buyer')->group(function () {
