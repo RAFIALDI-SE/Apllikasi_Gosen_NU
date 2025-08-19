@@ -36,7 +36,7 @@ Proyek ini dibangun menggunakan dua framework: Laravel sebagai backend dan Flutt
   
   3.	Salin file .env.example untuk membuat file konfigurasi .env:
   
-  -      cp .env.example .env
+  -      copy .env.example .env
   
   4.	Buka file .env dan atur database credentials Anda.
   5.	Generate application key Laravel:
