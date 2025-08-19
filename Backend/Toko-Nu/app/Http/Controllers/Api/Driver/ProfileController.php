@@ -21,6 +21,10 @@ class ProfileController extends Controller
                 'role' => $user->role,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'district_id' => $user->district_id,
+                'district' => $user->district ? $user->district->name : null,
+                'village_id' => $user->village_id,
+                'village' => $user->village ? $user->village->name : null,
                 'latitude' => $user->latitude,
                 'longitude' => $user->longitude,
                 'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
@@ -43,13 +47,16 @@ class ProfileController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
             'address' => 'sometimes|string',
-            'latitude' => 'sometimes|numeric',
-            'longitude' => 'sometimes|numeric',
+            'district_id' => 'nullable|exists:districts,id',
+            'village_id' => 'nullable|exists:villages,id',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'ktp_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'store_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        // handle upload gambar
         if ($request->hasFile('profile_picture')) {
             $validated['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
         }
@@ -62,11 +69,24 @@ class ProfileController extends Controller
             $validated['store_banner'] = $request->file('store_banner')->store('store_banners', 'public');
         }
 
+        // update data user
         $user->update($validated);
+
+        // update lokasi jika ada input latitude/longitude
+        if ($request->filled(['latitude', 'longitude'])) {
+            $user->location()->updateOrCreate(
+                ['driver_id' => $user->id],
+                [
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                ]
+            );
+        }
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'user' => $user->fresh(),
+            'user' => $user->fresh()->load('location'),
         ]);
     }
+
 }
