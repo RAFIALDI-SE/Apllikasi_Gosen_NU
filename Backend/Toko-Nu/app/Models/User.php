@@ -58,8 +58,8 @@ class User extends Authenticatable
         return $this->hasMany(Review::class, 'buyer_id');
     }
 
-    public function notifications() {
-        return $this->hasMany(Notification::class);
+    public function notifuser() {
+        return $this->hasMany(NotifUser::class);
     }
 
     public function driverLocation() {
