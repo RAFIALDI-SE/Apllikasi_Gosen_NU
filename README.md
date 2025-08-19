@@ -13,9 +13,9 @@ Proyek ini dibangun menggunakan dua framework: Laravel sebagai backend dan Flutt
 1. Persiapan Awal
 1.	Clone Repositori:
 Bash
-git clone https://github.com/nama-pengguna/nama-repositori.git
-(Ganti nama-pengguna dan nama-repositori dengan yang sesuai)
-2.	Masuk ke Direktori Proyek:
+git clone https://github.com/RAFIALDI-SE/Apllikasi_Gosen_NU.git
+
+3.	Masuk ke Direktori Proyek:
 Bash
 cd nama-repositori
 2. Instalasi Backend (Laravel)
