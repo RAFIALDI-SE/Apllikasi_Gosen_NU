@@ -34,17 +34,49 @@ class SellerResource extends Resource
     }
 
     public static function form(Form $form): Form
-    {
-        return $form
+{
+    return $form
         ->schema([
-            TextInput::make('name')->required(),
-            TextInput::make('email')->email()->required(),
-            TextInput::make('phone'),
-            TextInput::make('address'),
-            TextInput::make('latitude'),
-            TextInput::make('longitude'),
+            Forms\Components\Section::make('Informasi Seller')
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            TextInput::make('name')
+                                ->label('Nama Seller')
+                                ->required(),
+
+                            TextInput::make('email')
+                                ->label('Email')
+                                ->email()
+                                ->required(),
+
+                            TextInput::make('phone')
+                                ->label('Nomor Telepon'),
+
+                            TextInput::make('address')
+                                ->label('Alamat')
+                                ->columnSpanFull(),
+
+                            TextInput::make('latitude')
+                                ->label('Latitude'),
+
+                            TextInput::make('longitude')
+                                ->label('Longitude'),
+                        ]),
+                ])
+                ->collapsible(),
+
+            Forms\Components\Section::make('Status Akun')
+                ->schema([
+                    Forms\Components\Toggle::make('is_disabled')
+                        ->label('Akun Dinonaktifkan')
+                        ->default(false)
+                        ->helperText('Jika diaktifkan, semua produk seller akan disembunyikan.'),
+                ])
+                ->collapsible(),
         ]);
-    }
+}
+
 
     public static function table(Table $table): Table
     {
@@ -55,16 +87,22 @@ class SellerResource extends Resource
                 TextColumn::make('phone'),
                 TextColumn::make('role')->badge()->color('success'),
                 TextColumn::make('address')->limit(20),
+                Tables\Columns\IconColumn::make('is_disabled')
+                ->boolean()
+                ->label('Disabled?')
+                ->trueColor('danger')
+                ->falseColor('success'),
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
