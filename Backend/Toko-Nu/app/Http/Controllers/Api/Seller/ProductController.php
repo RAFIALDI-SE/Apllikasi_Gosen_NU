@@ -111,4 +111,24 @@ class ProductController extends Controller
         return response()->json(['message' => 'Produk berhasil dihapus']);
     }
 
+    public function toggleVisibility(Request $request,$id)
+    {
+
+    $user = $request->user();
+
+    $product = Product::where('id', $id)->where('user_id', $user->id)->first();
+
+    if (!$product) {
+        return response()->json(['message' => 'Produk tidak ditemukan atau bukan milik Anda'], 404);
+    }
+
+    $product->is_hidden = !$product->is_hidden;
+    $product->save();
+
+    return response()->json([
+        'message' => 'Status produk berhasil diperbarui',
+        'data' => $product
+    ]);
+    }
+
 }
