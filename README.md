@@ -92,7 +92,10 @@ Proyek ini dibangun menggunakan dua framework: Laravel sebagai backend dan Flutt
               ]);
           }
       }
+  lalu jalankan perintah dibawah :
 
+  -      php artisan db:seed
+  -      php artisan db:seed --class=AdminSeeder
   
   9.	Jalankan server pengembangan Laravel:
      
