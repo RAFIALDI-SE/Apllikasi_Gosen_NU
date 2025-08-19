@@ -34,43 +34,55 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
 
   bool _isGettingLocation = false;
 
+  List<dynamic> _districts = [];
+  List<dynamic> _villages = [];
+
+  String? _selectedDistrictId;
+  String? _selectedVillageId;
+
   @override
   void initState() {
     super.initState();
-    _fetchProfileData();
+    _loadDistricts().then((_) {
+      _fetchProfileData();
+    });
   }
 
   Future<void> _fetchProfileData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
 
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/seller/me'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8000/api/seller/me'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body)['user'];
-        setState(() {
-          _nameController.text = data['name'] ?? '';
-          _phoneController.text = data['phone'] ?? '';
-          _addressController.text = data['address'] ?? '';
-          _latitudeController.text = data['latitude']?.toString() ?? '';
-          _longitudeController.text = data['longitude']?.toString() ?? '';
-          _isLoading = false;
-        });
-      } else {
-        throw Exception("Gagal memuat data profil");
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      String? districtId = data['user']['district_id']?.toString();
+      String? villageId = data['user']['village_id']?.toString();
+
+      if (districtId != null) {
+        await _loadVillages(districtId);
       }
-    } catch (e) {
-      debugPrint("Error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal memuat profil')),
-        );
-      }
-      setState(() => _isLoading = false);
+
+      setState(() {
+        _nameController.text = data['user']['name'] ?? '';
+        _phoneController.text = data['user']['phone'] ?? '';
+        _addressController.text = data['user']['address'] ?? '';
+        _latitudeController.text = data['user']['latitude']?.toString() ?? '';
+        _longitudeController.text = data['user']['longitude']?.toString() ?? '';
+
+        _selectedDistrictId = districtId;
+        _selectedVillageId = villageId;
+
+        _isLoading = false;
+      });
+    } else {
+      print('Failed to fetch profile data: ${response.body}');
     }
   }
 
@@ -86,6 +98,8 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
       ..fields['name'] = _nameController.text
       ..fields['phone'] = _phoneController.text
       ..fields['address'] = _addressController.text
+      ..fields['district_id'] = _selectedDistrictId ?? ''
+      ..fields['village_id'] = _selectedVillageId ?? ''
       ..fields['latitude'] = _latitudeController.text
       ..fields['longitude'] = _longitudeController.text;
 
@@ -104,7 +118,17 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
           'store_banner', _bannerImage!.path));
     }
 
+    if (_selectedDistrictId != null) {
+      request.fields['district_id'] = _selectedDistrictId!;
+    }
+    if (_selectedVillageId != null) {
+      request.fields['village_id'] = _selectedVillageId!;
+    }
+
     final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+    print("STATUS: ${response.statusCode}");
+    print("BODY: $responseBody");
     if (response.statusCode == 200) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,6 +197,26 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
       }
     } finally {
       setState(() => _isGettingLocation = false);
+    }
+  }
+
+  Future<void> _loadDistricts() async {
+    final response =
+        await http.get(Uri.parse('http://10.0.2.2:8000/api/districts'));
+    if (response.statusCode == 200) {
+      setState(() {
+        _districts = json.decode(response.body);
+      });
+    }
+  }
+
+  Future<void> _loadVillages(String districtId) async {
+    final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/districts/$districtId/villages'));
+    if (response.statusCode == 200) {
+      setState(() {
+        _villages = json.decode(response.body);
+      });
     }
   }
 
@@ -401,6 +445,54 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
                         ),
                         _buildTextFieldWithIcon(
                             "Alamat", Icons.home, _addressController),
+                        DropdownButtonFormField<String>(
+                          value: _selectedDistrictId,
+                          decoration: InputDecoration(
+                            labelText: "Kecamatan",
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          items: _districts
+                              .map<DropdownMenuItem<String>>((district) {
+                            return DropdownMenuItem<String>(
+                              value: district['id'].toString(),
+                              child: Text(district['name']),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedDistrictId = value;
+                              _selectedVillageId = null;
+                              _villages = [];
+                            });
+                            if (value != null) _loadVillages(value);
+                          },
+                          validator: (value) =>
+                              value == null ? 'Kecamatan wajib dipilih' : null,
+                        ),
+                        DropdownButtonFormField<String>(
+                          value: _selectedVillageId,
+                          decoration: InputDecoration(
+                            labelText: "Desa / Kelurahan",
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          items: _villages
+                              .map<DropdownMenuItem<String>>((village) {
+                            return DropdownMenuItem<String>(
+                              value: village['id'].toString(),
+                              child: Text(village['name']),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedVillageId = value;
+                            });
+                          },
+                          validator: (value) => value == null
+                              ? 'Desa / Kelurahan wajib dipilih'
+                              : null,
+                        ),
                         _buildTextFieldWithIcon(
                             "Latitude", Icons.location_on, _latitudeController,
                             keyboardType: TextInputType.number),
