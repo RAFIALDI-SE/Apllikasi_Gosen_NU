@@ -5,8 +5,11 @@ import 'package:nu_seller_app/screens/product_detail_screen.dart';
 // import 'package:seller_nu/screens/edit_profile_screen.dart';
 import 'package:nu_seller_app/screens/seller_home_screen.dart';
 import 'package:nu_seller_app/screens/seller_profile_screen.dart';
+import 'screens/edit_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/seller_notifications_screen.dart';
+import 'screens/seller_order_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,13 +30,15 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/seller-home': (context) => const SellerHomeScreen(),
         '/profile': (context) => const SellerProfileScreen(),
-        // '/edit-profile': (context) => const EditProfileScreen(),
+        '/edit-profile': (context) => const SellerEditProfileScreen(),
         '/add-product': (context) => const AddProductScreen(),
         '/manage-products': (context) => const ManageProductsScreen(),
         '/product-detail': (context) {
           final productId = ModalRoute.of(context)!.settings.arguments as int;
           return ProductDetailScreen(productId: productId);
         },
+        '/seller-orders': (context) => const SellerOrderScreen(),
+        '/notifications': (context) => const SellerNotificationsScreen(),
       },
     );
   }
