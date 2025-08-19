@@ -44,10 +44,57 @@ Proyek ini dibangun menggunakan dua framework: Laravel sebagai backend dan Flutt
   -      php artisan key:generate
   
   6.	Jalankan migration untuk membuat tabel database:
-  
+     
   -      php artisan migrate
+
+  8.	Buat file Admin Seeder
   
-  7.	Jalankan server pengembangan Laravel:
+  -      php artisan make:seeder AdminSeeder
+
+ lalu isi file :
+
+       - <?php
+      
+      namespace Database\Seeders;
+      
+      use Illuminate\Database\Seeder;
+      use App\Models\User;
+      use Illuminate\Support\Facades\Hash;
+      
+      class AdminSeeder extends Seeder
+      {
+          /**
+           * Run the database seeds.
+           */
+          public function run(): void
+          {
+              // Membuat user admin baru dengan data lengkap
+              User::create([
+                  'name' => 'Admin Gosen',
+                  'email' => 'admin@gosen.id',
+                  'email_verified_at' => now(),
+                  'password' => Hash::make('password_rahasia_kamu'), // Ganti dengan password yang kuat
+                  'phone' => '081234567890',
+                  'role' => 'admin',
+                  'is_active' => true,
+                  'is_disabled' => false,
+                  'profile_picture' => null,
+                  'ktp_photo' => null,
+                  'store_banner' => null,
+                  'address' => 'Jl. Jalan Raya Gosen No. 123',
+                  'district_id' => 1, // Sesuaikan dengan ID district yang valid
+                  'village_id' => 1, // Sesuaikan dengan ID village yang valid
+                  'latitude' => null,
+                  'longitude' => null,
+                  'remember_token' => null,
+                  'created_at' => now(),
+                  'updated_at' => now(),
+              ]);
+          }
+      }
+
+  
+  9.	Jalankan server pengembangan Laravel:
      
   -      php artisan serve
 
